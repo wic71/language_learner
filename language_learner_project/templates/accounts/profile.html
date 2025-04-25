@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Min Profil" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+  <h1 class="text-2xl font-bold dark:text-white">{% trans "Mina skapade kurser" %}</h1>
+  <a href="{% url 'course_create' %}" class="inline-block mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+    {% trans "Skapa ny kurs" %}
+  </a>
+  {% if created_courses %}
+    <ul class="space-y-4">
+      {% for course in created_courses %}
+        <li class="bg-white dark:bg-gray-800 rounded shadow p-4 flex justify-between items-center">
+          <div>
+            <a href="{% url 'course_detail' course.id %}" class="text-lg font-semibold hover:underline dark:text-blue-300">
+              {{ course.name }} – {{ course.get_language_display }}
+            </a>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              {% trans "Basspråk" %}: {{ course.get_base_language_display }}
+              · {% trans "Publik" %}: {{ course.is_public|yesno:_("Ja,Nej") }}
+            </p>
+          </div>
+          <!-- Tre-prickars meny -->
+          <div class="relative">
+            <button onclick="toggleMenu('menu-{{ course.id }}')" class="text-2xl font-bold">⋯</button>
+            <div id="menu-{{ course.id }}" class="hidden absolute right-0 mt-2 bg-white dark:bg-gray-700 shadow-lg rounded z-10 w-40">
+              <a href="{% url 'course_edit' course.id %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">{% trans "Redigera kurs" %}</a>
+              <!-- fler alternativ kan läggas till här -->
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-gray-500 dark:text-gray-400">{% trans "Du har inte skapat några kurser ännu." %}</p>
+  {% endif %}
+
+</div>
+
+<script>
+  function toggleMenu(id) {
+    document.querySelectorAll('[id^="menu-"]').forEach(m => m.classList.add("hidden"));
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("hidden");
+  }
+</script>
+{% endblock %}

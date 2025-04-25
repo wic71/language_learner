@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+
+{% block title %}{{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 a11y:card shadow rounded">
+  <h1 class="text-2xl font-bold dark:text-white">{{ course.name }}</h1>
+  <p class="text-gray-500 dark:text-gray-300">
+    {% trans "Lär dig" %}: {{ course.get_language_display }} ·
+    {% trans "Basspråk" %}: {{ course.get_base_language_display }}
+  </p>
+  <p>{% trans "Denna sida är inte klar ännu – men kursen finns!" %}</p>
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Min App{% endblock %}</title>
+
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'build/output.css' %}">
+
+  <!-- Tailwind + darkMode: class -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      safelist: [
+        'dark:bg-gray-500',
+        'bg-gray-600',
+        'dark:bg-gray-800',
+        'dark:bg-gray-900'
+      ]
+    }
+  </script>
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+
+  <style>
+    .a11y {
+      background-color: #fff !important;
+      color: #000 !important;
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    }
+
+    .a11y .card,
+    .a11y main,
+    .a11y nav,
+    .a11y footer {
+      background-color: #fff !important;
+      color: #000 !important;
+      border: 2px solid #000 !important;
+      box-shadow: none !important;
+    }
+
+    .a11y a,
+    .a11y button {
+      background-color: #ff0 !important;
+      color: #000 !important;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body id="theme-root"
+      class="bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-100 transition-colors duration-300">
+
+  <!-- Navbar -->
+  <nav class="bg-white dark:bg-gray-900 a11y:card shadow" role="navigation" aria-label="Huvudmeny">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="/" class="text-xl font-bold text-blue-600 dark:text-blue-400">Min App</a>
+      <div class="space-x-4">
+        <a href="/" class="hover:underline">Hem</a>
+        <a href="#" class="hover:underline">Om</a>
+    
+        {% if user.is_authenticated %}
+            <a href="{% url 'profile' %}" class="hover:underline">Profil</a>
+            <form method="post" action="{% url 'logout' %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="hover:underline text-left">
+                    Logga ut
+                </button>
+            </form>
+        {% else %}
+            <a href="{% url 'signup' %}" class="hover:underline">Registrera</a>
+            <a href="{% url 'login' %}" class="hover:underline">Logga in</a>
+        {% endif %}
+        
+    </div>
+      <div class="space-x-2" role="group" aria-label="Temaväljare">
+        <button onclick="setTheme('standard')" id="btn-standard" class="theme-btn">Standard</button>
+        <button onclick="setTheme('dark')" id="btn-dark" class="theme-btn">Mörk</button>
+        <button onclick="setTheme('a11y')" id="btn-a11y" class="theme-btn">A11Y</button>
+      </div>
+    </div>
+
+  </nav>
+  
+  <!-- Tvinga Tailwind att inkludera dessa dark-klasser -->
+  <div class="hidden dark:bg-gray-600 dark:bg-gray-600 dark:bg-gray-900"></div>
+
+  <!-- Innehåll -->
+  <main class="max-w-4xl mx-auto px-4 py-6 bg-white dark:bg-gray-600 a11y:card shadow rounded">
+    {% block content %}{% endblock %}
+  </main>
+
+
+  <!-- Footer -->
+  <footer class="text-center text-sm text-gray-500 dark:text-gray-400 mt-12 mb-6 a11y:card">
+    &copy; {{ now|date:"Y" }} Min App. Alla rättigheter förbehållna.
+  </footer>
+
+  <!-- HTMX CSRF -->
+  <script>
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let c of cookies) {
+        const [k, v] = c.trim().split('=');
+        if (k === name) return decodeURIComponent(v);
+      }
+      return null;
+    }
+
+    document.body.addEventListener('htmx:configRequest', e => {
+      e.detail.headers['X-CSRFToken'] = getCookie('csrftoken');
+    });
+  </script>
+
+  <!-- Temaväxling -->
+  <script>
+    const root = document.getElementById('theme-root');
+    const buttons = {
+      standard: document.getElementById('btn-standard'),
+      dark: document.getElementById('btn-dark'),
+      a11y: document.getElementById('btn-a11y')
+    };
+
+    function clearThemes() {
+      root.classList.remove('dark', 'a11y');
+      for (let btn of Object.values(buttons)) {
+        btn.classList.remove('bg-gray-700', 'text-white', 'ring', 'ring-blue-500');
+      }
+    }
+
+    function setTheme(mode) {
+      clearThemes();
+      if (mode === 'dark') {
+        root.classList.add('dark');
+        buttons.dark.classList.add('bg-gray-700', 'text-white', 'ring', 'ring-blue-500');
+      } else if (mode === 'a11y') {
+        root.classList.add('a11y');
+        buttons.a11y.classList.add('bg-gray-700', 'text-white', 'ring', 'ring-blue-500');
+      } else {
+        buttons.standard.classList.add('bg-gray-700', 'text-white', 'ring', 'ring-blue-500');
+      }
+      localStorage.setItem('theme', mode);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setTheme(localStorage.getItem('theme') || 'standard');
+    });
+  </script>
+
+  <!-- Temaknapp -->
+  <style>
+    .theme-btn {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      background-color: #f9fafb;
+      transition: all 0.2s ease;
+    }
+
+    .dark .theme-btn {
+      background-color: #374151;
+      color: #e5e7eb;
+      border-color: #4b5563;
+    }
+  </style>
+</body>
+</html>
