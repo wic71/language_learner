@@ -1,0 +1,34 @@
+<tr id="word-{{ word.id }}" class="border-b dark:border-gray-700">
+    <td class="px-4 py-2">
+        {{ word.text }}
+    </td>
+    <td class="px-4 py-2">
+        <div 
+            class="editable p-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 cursor-pointer"
+            data-id="{{ word.id }}" 
+            data-field="translation"
+            onclick="startEditingTextarea(this)"
+        >
+            {{ word.translation }}
+        </div>
+        <div id="audio-upload-success" class="hidden text-green-600 font-bold mt-2">
+            ✅ Ljud uppladdat!
+        </div>
+    </td>
+    <td class="px-4 py-2">
+        {% if word.audio %}
+            <audio controls class="h-8" src="{{ word.audio.url }}"></audio>
+            <button 
+                onclick="deleteWordAudio({{ word.id }})"
+                class="ml-2 text-red-600 hover:text-red-800 text-sm"
+            >
+                🗑
+            </button>
+        {% else %}
+            <form method="post" enctype="multipart/form-data" onsubmit="uploadWordAudio(event, {{ word.id }})" class="inline">
+                <input type="file" name="audio" accept="audio/*" class="text-sm" required>
+                <button type="submit" class="text-green-600 hover:text-green-800 text-sm ml-2">⬆️</button>
+            </form>
+        {% endif %}
+    </td>
+</tr>

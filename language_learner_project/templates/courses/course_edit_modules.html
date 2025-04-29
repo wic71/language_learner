@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}
+  {% trans "Hantera moduler för kurs" %}
+{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto py-8 space-y-6">
+
+  <h1 class="text-2xl font-bold dark:text-white mb-4">{{ course.name }}</h1>
+
+  <!-- Knapp för att skapa ny modul -->
+  <button 
+    hx-get="{% url 'module_create' course.pk %}" 
+    hx-target="#modal-body" 
+    hx-swap="innerHTML"
+    onclick="openModal()"
+    class="px-4 py-2 bg-green-600 text-white rounded"
+  >
+    {% trans "Lägg till ny modul" %}
+  </button>
+
+  <!-- Lista av moduler -->
+  <ul id="modules-list" class="space-y-4 mt-6">
+    {% for module in modules %}
+      <li id="module-{{ module.id }}" data-id="{{ module.id }}" class="bg-white dark:bg-gray-800 p-4 rounded shadow flex justify-between items-center">
+        
+        <!-- Modulinfo (drag-handle) -->
+        <div class="drag-handle cursor-move">
+          <h2 class="text-lg font-semibold dark:text-blue-300">{{ module.title }}</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ module.description|truncatewords:15 }}</p>
+        </div>
+  
+        <!-- Knappar -->
+        <div class="flex flex-col space-y-2 ml-4 text-right">
+          <button 
+            hx-get="{% url 'module_edit' module.pk %}" 
+            hx-target="#modal-body" 
+            hx-swap="innerHTML"
+            onclick="openModal()"
+            class="text-blue-500 hover:underline"
+          >
+            {% trans "Redigera" %}
+          </button>
+          <button 
+            onclick="softDeleteModule({{ module.id }})"
+            class="text-red-500 hover:underline"
+          >
+            {% trans "Radera" %}
+          </button>
+        </div>
+  
+      </li>
+    {% empty %}
+      <li class="text-gray-500 dark:text-gray-400">{% trans "Inga moduler ännu." %}</li>
+    {% endfor %}
+  </ul>
+  
+
+</div>
+
+<!-- Modal för formulär -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div id="modal-content" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-5xl p-8 relative animate-fade-in" style="max-height: 90vh; overflow-y: auto;">
+    <div id="modal-body">
+      <!-- Här laddas formulär/kort etc dynamiskt -->
+    </div>
+    <button onclick="closeModal()" class="absolute top-2 right-2 text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">
+      ✖
+    </button>
+  </div>
+</div>
+
+
+
+<!-- Sortable.js (Drag-n-drop) -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('modules-list');
+    Sortable.create(el, {
+      animation: 150,
+      handle: '.drag-handle',
+      onEnd: function (evt) {
+        const ids = Array.from(el.querySelectorAll('li')).map(item => item.dataset.id);
+        fetch("{% url 'module_reorder' course.pk %}", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ order: ids })
+        });
+      }
+    });
+  });
+
+  function openModal() {
+    document.getElementById('modal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+  }
+</script>
+
+<script>
+  function softDeleteModule(moduleId) {
+    const moduleEl = document.getElementById(`module-${moduleId}`);
+
+    if (!confirm("Är du säker på att du vill radera denna modul? Du kan ångra inom 5 sekunder.")) {
+      return;
+    }
+
+    // Lägg på en klass för fade-out
+    moduleEl.classList.add('opacity-50');
+    
+    // Lägg till en Undo-knapp
+    const undoBtn = document.createElement('button');
+    undoBtn.textContent = 'Ångra';
+    undoBtn.className = 'ml-4 text-green-600 underline';
+    
+    let timeoutId = setTimeout(() => {
+      // Skicka POST för att verkligen ta bort modulen
+      fetch("{% url 'module_delete' 0 %}".replace('0', moduleId), {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+        }
+      }).then(response => {
+        if (response.ok) {
+          moduleEl.remove();
+        } else {
+          alert('Misslyckades att ta bort modul.');
+          moduleEl.classList.remove('opacity-50');
+          undoBtn.remove();
+        }
+      });
+    }, 5000);
+
+
+    
+
+
+    // Om användaren klickar "Ångra"
+    undoBtn.addEventListener('click', () => {
+      clearTimeout(timeoutId);
+      moduleEl.classList.remove('opacity-50');
+      undoBtn.remove();
+    });
+
+    moduleEl.appendChild(undoBtn);
+  }
+</script>
+
+<!-- Fade-out animation för HTMX delete -->
+<style>
+  /* Fade ut och glid bort vid borttagning med HTMX */
+  .htmx-swapping {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  }
+</style>
+
+<script>
+  function openModal() {
+    const modal = document.getElementById('modal');
+    modal.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('modal');
+    modal.classList.add('hidden');
+  }
+
+  // Stäng modal om man klickar utanför innehållet
+  document.getElementById('modal').addEventListener('click', function(event) {
+    if (event.target.id === 'modal') {
+      closeModal();
+    }
+  });
+</script>
+
+<style>
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+</style>
+
+
+{% endblock %}

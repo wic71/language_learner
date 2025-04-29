@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Utforska kurser" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <h1 class="text-2xl font-bold dark:text-white">{% trans "Publika kurser" %}</h1>
+
+  {% if courses %}
+    <ul class="space-y-4">
+      {% for course in courses %}
+        <li class="bg-white dark:bg-gray-800 shadow rounded p-4 flex justify-between items-center">
+          <div>
+            <h2 class="text-lg font-semibold">{{ course.name }}</h2>
+            <p class="text-sm text-gray-500">
+              {% trans "Skapare" %}: {{ course.creator.username }} |
+              {% trans "Språk" %}: {{ course.get_language_display }} |
+              {% trans "Basspråk" %}: {{ course.get_base_language_display }}
+              {% if course.description %}
+                    <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">{{ course.description|truncatewords:20 }}</p>
+              {% endif %}
+            </p>
+          </div>
+          <form method="post" action="{% url 'join_course' course.pk %}">
+            {% csrf_token %}
+            <button class="px-4 py-2 bg-blue-600 text-white rounded">{% trans "Gå med" %}</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-gray-500">{% trans "Inga tillgängliga kurser just nu." %}</p>
+  {% endif %}
+</div>
+{% endblock %}

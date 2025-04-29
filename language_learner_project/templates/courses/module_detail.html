@@ -1,0 +1,1016 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load i18n form_tags %}
+
+{% block content %}
+
+
+
+
+<div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow space-y-6">
+    <!-- DITT INNEHÅLL HÄR -->
+    <a href="{% url 'course_detail' module.course.pk %}" class="text-blue-500 hover:underline">
+      &larr; Tillbaka till kursen
+    </a>
+
+    <h1 class="text-3xl font-bold dark:text-white">{{ module.title }}</h1>
+    <p class="text-gray-600 dark:text-gray-300">{{ module.description }}</p>
+
+    <div class="py-4">
+        {{ module.text|linebreaks }}
+    </div>
+
+    <div class="flex space-x-4 pt-4">
+        <button onclick="openWords()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center space-x-2">
+            📚 <span>{% trans "Visa ord" %}</span>
+        </button>
+
+        <button onclick="openSentences()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center space-x-2">
+            🗣️ <span>{% trans "Visa meningar" %}</span>
+        </button>
+
+        <button onclick="openClozePractice()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded flex items-center space-x-2">
+            ✏️ <span>{% trans "Öva lucktext" %}</span>
+        </button>
+
+        <button onclick="openWordPractice()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded flex items-center space-x-2">
+            🧠 <span>{% trans "Öva glosor" %}</span>
+        </button>
+
+        <button onclick="openWordQuiz()" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded flex items-center space-x-2">
+            🎯 <span>{% trans "Öva ord (4 alternativ)" %}</span>
+        </button>
+
+        <button onclick="openChooseExercise()" class="px-4 py-2 bg-red-500 hover:bg-yellow-600 text-white rounded flex items-center space-x-2">
+            🎯 <span>Tidspressaren</span>
+          </button>
+    </div>
+
+    <!-- Modaler -->
+    <div id="words-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg max-w-2xl w-full overflow-auto max-h-[90vh]">
+            <button onclick="closeWords()" class="text-gray-500 hover:text-black dark:hover:text-white float-right">✖</button>
+            <h2 class="text-xl font-bold mb-4">{% trans "Ord i modulen" %}</h2>
+            <div class="grid grid-cols-2 gap-4">
+                {% for word in module.words.all %}
+                <div class="border p-3 rounded-lg shadow">
+                    {% if word.image %}
+                        <img src="{{ word.image.url }}" alt="" class="w-full h-24 object-cover rounded mb-2">
+                    {% endif %}
+                    <div class="font-bold">{{ word.text }}</div>
+                    <div class="text-gray-600">{{ word.translation }}</div>
+                    {% if word.audio %}
+                        <audio controls src="{{ word.audio.url }}" class="mt-2 w-full"></audio>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div id="sentences-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg max-w-2xl w-full overflow-auto max-h-[90vh]">
+            <button onclick="closeSentences()" class="text-gray-500 hover:text-black dark:hover:text-white float-right">✖</button>
+            <h2 class="text-xl font-bold mb-4">{% trans "Visa meningar" %}</h2>
+            <div id="sentence-container" class="flex flex-col justify-center items-center min-h-[300px]">
+                Laddar...
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal för lucktextövning -->
+    <div id="cloze-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg max-w-2xl w-full overflow-auto max-h-[90vh]">
+            <button onclick="closeClozePractice()" class="text-gray-500 hover:text-black dark:hover:text-white float-right">✖</button>
+            <h2 class="text-xl font-bold mb-4">✏️ {% trans "Öva lucktext" %}</h2>
+            
+            <div id="cloze-container" class="space-y-6 text-center">
+                {% trans "Laddar..." %}
+            </div>
+        </div>
+    </div>
+
+    <div id="word-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg max-w-2xl w-full overflow-auto max-h-[90vh]">
+            <button onclick="closeWordPractice()" class="text-gray-500 hover:text-black dark:hover:text-white float-right">✖</button>
+            <h2 class="text-xl font-bold mb-4">🧠 Glosförhör</h2>
+            
+            <div id="word-container" class="space-y-6 text-center">
+                Laddar glosor...
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal för WordQuiz -->
+    <div id="wordquiz-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg max-w-2xl w-full overflow-auto max-h-[90vh] space-y-6">
+            <button onclick="closeWordQuiz()" class="text-gray-500 hover:text-black dark:hover:text-white float-right">✖</button>
+            <h2 class="text-xl font-bold mb-4">🎯 Öva ord (4 alternativ)</h2>
+
+            <div id="wordquiz-container" class="flex flex-col items-center space-y-4">
+                Laddar...
+            </div>
+        </div>
+    </div>    
+
+    <div id="choose-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg max-w-2xl w-full overflow-auto max-h-[90vh]">
+            <button onclick="closeChooseExercise()" class="text-gray-500 hover:text-black dark:hover:text-white float-right">✖</button>
+            <h2 class="text-xl font-bold mb-4">🎯 Välj rätt översättning</h2>
+        
+            <div id="choose-container" class="space-y-6 text-center min-h-[300px] flex flex-col justify-center items-center">
+            Laddar...
+            </div>
+        
+            <div id="choose-timer" class="w-full h-2 bg-gray-300 rounded overflow-hidden mt-6">
+            <div id="choose-timer-bar" class="h-full bg-blue-500 transition-all"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Fade-in för översättningen */
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .animate-fade-in {
+        animation: fadeIn 1s ease-in forwards;
+    }
+    
+    /* Enkel progressbar styling */
+    .progress-container {
+        background-color: #e5e7eb; /* light grey */
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 20px;
+    }
+    
+    .progress-bar {
+        background-color: #3b82f6; /* blue-500 */
+        height: 100%;
+        width: 0%;
+        transition: width 0.5s ease;
+    }
+
+    @keyframes fadeInFast {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fade-in-fast {
+        animation: fadeInFast 0.3s ease-out forwards;
+    }
+
+</style>
+    
+<script>
+    let container;
+    let sentenceData = [];
+    let currentIndex = 0;
+    let translationTimer;
+    
+
+    function openWords() {
+        document.getElementById('words-modal').classList.remove('hidden');
+    }
+    function closeWords() {
+        document.getElementById('words-modal').classList.add('hidden');
+    }
+    function openSentences() {
+        document.getElementById('sentences-modal').classList.remove('hidden');
+        loadSentences();
+    }
+
+    function closeSentences() {
+        document.getElementById('sentences-modal').classList.add('hidden');
+        clearTimeout(translationTimer);
+    }
+
+    function loadSentences() {
+        container = document.getElementById('sentence-container');
+        container.innerHTML = '';
+
+        const dataScript = document.getElementById('sentence-data');
+        const jsonData = JSON.parse(dataScript.textContent || '[]');
+        if (!jsonData.length) {
+            container.innerHTML = "Inga meningar tillgängliga.";
+            return;
+        }
+        sentenceData = jsonData;
+        currentIndex = 0;
+        showSentence(currentIndex);
+    }
+
+        
+    function showSentence(index) {
+        const sentence = sentenceData[index];
+
+        container.innerHTML = `
+            <div class="text-center space-y-6">
+                <div class="text-2xl font-bold text-gray-800 dark:text-white">${sentence.text}</div>
+
+                ${sentence.audio ? `<audio id="audio-player" controls autoplay class="mx-auto">
+                    <source src="${sentence.audio}" type="audio/mpeg">
+                    Din webbläsare stödjer inte ljuduppspelning.
+                </audio>` : ""}
+
+                <div id="translation" class="text-lg text-gray-500 pt-4 hidden">
+                    ${sentence.translation}
+                </div>
+
+                <div class="flex justify-between items-center pt-6">
+                    <button onclick="prevSentence()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">← Föregående</button>
+                    <button onclick="nextSentence()" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">Nästa →</button>
+                </div>
+
+                <div class="progress-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+            </div>
+        `;
+
+        clearTimeout(translationTimer);
+
+        translationTimer = setTimeout(() => {
+            const translationEl = document.getElementById('translation');
+            if (translationEl) {
+                translationEl.classList.remove('hidden');
+                translationEl.classList.add('animate-fade-in');
+            }
+        }, 3000);
+
+        if (sentence.audio) {
+            const audioPlayer = document.getElementById('audio-player');
+            if (audioPlayer) {
+                audioPlayer.play();
+            }
+        }
+
+        updateProgress();
+    }
+
+    function nextSentence() {
+        if (currentIndex < sentenceData.length - 1) {
+            currentIndex++;
+            showSentence(currentIndex);
+        }
+    }
+
+    function prevSentence() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            showSentence(currentIndex);
+        }
+    }
+
+    function updateProgress() {
+        const progressPercent = ((currentIndex + 1) / sentenceData.length) * 100;
+        document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+    }
+</script>
+
+<script>
+    let clozeIndex = 0;
+    let clozeScore = 0;
+    let clozeData = [];
+    
+    function openClozePractice() {
+        document.getElementById('cloze-modal').classList.remove('hidden');
+        loadClozeData();
+    }
+    
+    function closeClozePractice() {
+        document.getElementById('cloze-modal').classList.add('hidden');
+    }
+    
+    function loadClozeData() {
+        clozeData = [];
+    
+        const sentences = JSON.parse(document.getElementById('sentence-data').textContent || '[]');
+        const words = JSON.parse(document.getElementById('word-data').textContent || '[]');
+    
+        const importantWords = words.map(w => w.text.toLowerCase());
+    
+        sentences.forEach(sentence => {
+            importantWords.forEach(word => {
+                const regex = new RegExp("\\b" + word + "\\b", "i");
+                if (regex.test(sentence.text)) {
+                    const clozeText = sentence.text.replace(regex, "_____");
+                    clozeData.push({
+                        cloze_text: clozeText,
+                        missing_word: word,
+                        translation: sentence.translation,
+                        audio: sentence.audio,
+                    });
+                }
+            });
+        });
+    
+        if (clozeData.length === 0) {
+            document.getElementById('cloze-container').innerHTML = "<p>Ingen lucktext tillgänglig.</p>";
+            return;
+        }
+    
+        shuffleArray(clozeData);
+        clozeIndex = 0;
+        clozeScore = 0;
+        showCloze(clozeIndex);
+    }
+    
+    function showCloze(index) {
+        const cloze = clozeData[index];
+        const container = document.getElementById('cloze-container');
+    
+        container.innerHTML = `
+        <div id="cloze-card" class="p-6 bg-white dark:bg-gray-700 rounded-lg shadow space-y-6 transition-all duration-500">
+            <div class="text-sm text-gray-400 dark:text-gray-300">
+                Fråga ${index + 1} av ${clozeData.length}
+            </div>
+    
+            <div class="text-2xl font-bold text-gray-800 dark:text-white">${cloze.cloze_text}</div>
+    
+            <input id="cloze-input" type="text" class="w-full p-2 border rounded dark:bg-gray-600 dark:text-white" placeholder="Skriv ordet...">
+    
+            <div class="text-gray-500">${cloze.translation}</div>
+    
+            <div id="cloze-feedback" class="pt-4"></div>
+    
+            <div class="flex justify-center pt-6">
+                <button id="cloze-check-btn" onclick="checkClozeAnswer()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                    Bekräfta
+                </button>
+            </div>
+    
+            <div id="cloze-spinner" class="hidden flex justify-center pt-4">
+                <div class="h-8 w-8 border-4 border-blue-400 border-dashed rounded-full animate-spin"></div>
+            </div>
+    
+            <div class="text-sm text-gray-400 dark:text-gray-300 pt-4">
+                Poäng: ${clozeScore} / ${clozeData.length}
+            </div>
+        </div>
+        `;
+    
+        const input = document.getElementById('cloze-input');
+        input.focus();
+        input.addEventListener('keyup', function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                checkClozeAnswer();
+            }
+        });
+    }
+    
+    function checkClozeAnswer() {
+        const input = document.getElementById('cloze-input').value.trim().toLowerCase();
+        const correct = clozeData[clozeIndex].missing_word.toLowerCase();
+        const feedback = document.getElementById('cloze-feedback');
+        const checkBtn = document.getElementById('cloze-check-btn');
+        const card = document.getElementById('cloze-card');
+        const spinner = document.getElementById('cloze-spinner');
+    
+        checkBtn.disabled = true;
+        checkBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+        if (input === correct) {
+            feedback.innerHTML = `<span class="text-green-600 font-bold">✅ Rätt!</span>`;
+            clozeScore++;
+            card.classList.add('bg-green-100', 'animate-fade-in-fast');
+        } else {
+            feedback.innerHTML = `<span class="text-red-600 font-bold">❌ Fel!</span> Rätt svar: <strong>${correct}</strong>`;
+            card.classList.add('bg-red-100', 'animate-fade-in-fast');
+        }
+    
+        const audioUrl = clozeData[clozeIndex].audio;
+        if (audioUrl) {
+            const audio = new Audio(audioUrl);
+            spinner.classList.remove('hidden');
+            audio.play();
+            audio.onended = () => {
+                spinner.classList.add('hidden');
+                moveToNextCloze();
+            };
+        } else {
+            setTimeout(moveToNextCloze, 1500);
+        }
+    }
+    
+    function moveToNextCloze() {
+        if (clozeIndex < clozeData.length - 1) {
+            clozeIndex++;
+            showCloze(clozeIndex);
+        } else {
+            document.getElementById('cloze-container').innerHTML = `
+                <div class="text-2xl font-bold text-center text-green-700">
+                    Övning klar!<br/>
+                    Du fick ${clozeScore} av ${clozeData.length} rätt! 🎉
+                </div>
+                <button onclick="closeClozePractice()" class="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Stäng
+                </button>
+            `;
+        }
+    }
+    
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+    </script>
+    
+    
+    
+
+
+
+
+
+<!-- JSON-data för meningar -->
+<script id="sentence-data" type="application/json">
+    {{ sentences_json|safe }}
+</script>
+
+<script id="word-data" type="application/json">
+    {{ words_json|safe }}
+</script>
+
+<script id="cloze-data" type="application/json">
+    {{ cloze_json|safe }}
+</script>
+
+
+<script>
+    let wordDeck = [];
+    let wordIndex = 0;
+    let wordScore = 0;
+    let wordAttempts = 0;
+    
+    function openWordPractice() {
+        document.getElementById('word-modal').classList.remove('hidden');
+        loadWordDeck();
+    }
+    
+    function closeWordPractice() {
+        document.getElementById('word-modal').classList.add('hidden');
+    }
+    
+    function loadWordDeck() {
+        wordDeck = [];
+
+        const words = JSON.parse(document.getElementById('word-data').textContent || '[]');
+        if (words.length === 0) {
+            console.error("❌ Inga ord tillgängliga!");
+            return;
+        }
+        words.forEach(word => {
+            // Två kort per ord: språk -> basspråk och basspråk -> språk
+            wordDeck.push({
+                prompt: word.text,
+                answer: word.translation,
+                example: word.example_sentence || "",
+                direction: "forward"
+            });
+            wordDeck.push({
+                prompt: word.translation,
+                answer: word.text,
+                example: word.example_sentence || "",
+                direction: "reverse"
+            });
+        });
+    
+        shuffleArray(wordDeck);
+        wordIndex = 0;
+        wordScore = 0;
+        wordAttempts = 0;
+        showWordCard();
+    }
+    
+  
+
+        // 🎵 Om ljudfil finns → skapa audio taggen
+        if (card.audio) {
+            document.getElementById('word-audio').innerHTML = `
+                <audio id="word-audio-player" src="${card.audio}" preload="auto"></audio>
+            `;
+        }
+        
+    function showWordCard() {
+        const card = wordDeck[wordIndex];
+        const container = document.getElementById('word-container');
+
+        container.innerHTML = `
+            <div id="word-card" class="p-6 bg-white dark:bg-gray-700 rounded-lg shadow space-y-6 transition-all duration-500">
+                <div class="text-2xl font-bold text-gray-800 dark:text-white">${card.prompt}</div>
+
+                <div class="text-gray-500 italic">${card.example}</div>
+
+                <input id="word-input" type="text" class="w-full p-2 border rounded dark:bg-gray-600 dark:text-white" placeholder="Översättning...">
+
+                <div id="word-feedback" class="pt-4"></div>
+
+                <div id="word-audio" class="hidden"></div>
+
+                <div class="flex justify-center pt-6">
+                    <button id="word-check-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                        Bekräfta
+                    </button>
+                </div>
+
+                <div id="word-spinner" class="hidden flex justify-center pt-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+                </div>
+
+                <div class="pt-4 text-gray-500 text-sm">Poäng: ${wordScore} / Försök: ${wordAttempts}</div>
+            </div>
+        `;
+
+        // Bind event handlers
+        const input = document.getElementById('word-input');
+        const button = document.getElementById('word-check-btn');
+
+        input.focus();
+
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                checkWordAnswer();
+            }
+        });
+
+        button.addEventListener('click', function() {
+            checkWordAnswer();
+        });
+
+        // 🎵 Om ljudfil finns → skapa audio taggen
+        if (card.audio) {
+            document.getElementById('word-audio').innerHTML = `
+                <audio id="word-audio-player" src="${card.audio}" preload="auto"></audio>
+            `;
+        }
+    }
+
+
+
+
+    
+    function checkWordAnswer() {
+        console.log('✅ Klick på bekräfta registrerat!');  // <-- Lägg till denna först
+        const input = document.getElementById('word-input').value.trim().toLowerCase();
+        const correct = wordDeck[wordIndex].answer.trim().toLowerCase();
+        const feedback = document.getElementById('word-feedback');
+        const checkBtn = document.getElementById('word-check-btn');
+        const card = document.getElementById('word-card');
+        const spinner = document.getElementById('word-spinner');
+    
+        console.log('✅ Klick på bekräfta registrerat!');  // <-- Lägg till denna först
+        
+        // Disable knappen
+        checkBtn.disabled = true;
+        checkBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    
+        wordAttempts++;
+    
+        if (input === correct) {
+            feedback.innerHTML = `<span class="text-green-600 font-bold">✅ Rätt!</span>`;
+            wordScore++;
+            card.classList.add('bg-green-100');
+        } else {
+            feedback.innerHTML = `<span class="text-red-600 font-bold">❌ Fel!</span> Rätt svar: <strong>${correct}</strong>`;
+            card.classList.add('bg-red-100');
+    
+            // Lägg fel kort sist
+            wordDeck.push(wordDeck[wordIndex]);
+        }
+    
+        spinner.classList.remove('hidden');
+    
+        // Spela ljud om det finns
+        const audioPlayer = document.getElementById('word-audio-player');
+        if (audioPlayer) {
+            spinner.classList.remove('hidden');
+            audioPlayer.play();
+            audioPlayer.onended = () => {
+                spinner.classList.add('hidden');
+                moveToNextWord();
+            };
+        } else {
+            setTimeout(moveToNextWord, 1500);
+        }
+    }
+
+    function moveToNextWord() {
+        wordIndex++;
+    
+        if (wordIndex < wordDeck.length) {
+            showWordCard();
+        } else {
+            showWordComplete();
+        }
+    }
+    
+    function showWordComplete() {
+        const container = document.getElementById('word-container');
+    
+        const scorePercent = Math.round((wordScore / wordAttempts) * 100);
+    
+        container.innerHTML = `
+            <div class="text-2xl font-bold text-center text-green-700">
+                🏆 Övning klar!<br/>
+                Du fick ${wordScore} rätt av ${wordAttempts} försök (${scorePercent}%)
+            </div>
+            <button onclick="closeWordPractice()" class="mt-6 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                Stäng
+            </button>
+        `;
+    }
+    
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+    </script>
+
+
+
+
+    <script>
+        let wordQuizDeck = [];
+        let currentWordIndex = 0;
+        let wordQuizScore = 0;
+        let wordQuizAttempts = 0;
+        let isAudioPlaying = false;
+        
+        function openWordQuiz() {
+            document.getElementById('wordquiz-modal').classList.remove('hidden');
+            setupWordQuiz();
+        }
+        
+        function closeWordQuiz() {
+            document.getElementById('wordquiz-modal').classList.add('hidden');
+        }
+        
+        function setupWordQuiz() {
+            const words = JSON.parse(document.getElementById('word-data').textContent || '[]');
+        
+            if (words.length === 0) {
+                document.getElementById('wordquiz-container').innerHTML = "<p>Inga ord tillgängliga.</p>";
+                return;
+            }
+        
+            wordQuizDeck = [];
+        
+            words.forEach(word => {
+                // Både riktningar!
+                wordQuizDeck.push({
+                    prompt: word.text,
+                    answer: word.translation,
+                    example: word.example_sentence || '',
+                    audio: word.audio,
+                });
+                wordQuizDeck.push({
+                    prompt: word.translation,
+                    answer: word.text,
+                    example: word.example_sentence || '',
+                    audio: word.audio,
+                });
+            });
+        
+            shuffleArray(wordQuizDeck);
+            currentWordIndex = 0;
+            wordQuizScore = 0;
+            wordQuizAttempts = 0;
+        
+            showWordQuiz(currentWordIndex);
+        }
+        
+        function showWordQuiz(index) {
+            const card = wordQuizDeck[index];
+            const container = document.getElementById('wordquiz-container');
+            container.innerHTML = `
+                <div id="quiz-card" class="p-6 bg-white dark:bg-gray-700 rounded-lg shadow space-y-6 transition-all duration-500">
+                    <div class="text-3xl font-bold text-gray-900 dark:text-white">${card.prompt}</div>
+        
+                    <div class="text-gray-500">${card.example || ''}</div>
+        
+                    <div id="quiz-options" class="grid grid-cols-2 gap-4 pt-4"></div>
+        
+                    <div id="quiz-feedback" class="pt-4"></div>
+        
+                    <div class="text-sm text-gray-400">Poäng: ${wordQuizScore} / Försök: ${wordQuizAttempts}</div>
+        
+                    <div id="quiz-spinner" class="hidden flex justify-center pt-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-yellow-500"></div>
+                    </div>
+                </div>
+            `;
+        
+            if (card.audio) {
+                playAudio(card.audio);
+            }
+        
+            const options = generateOptions(card.answer);
+            const optionsDiv = document.getElementById('quiz-options');
+        
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = "px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded";
+                btn.innerText = option;
+                btn.onclick = () => checkWordAnswerQuiz(option, card.answer);
+                btn.disabled = isAudioPlaying;  // disable om ljud pågår
+                optionsDiv.appendChild(btn);
+            });
+        }
+        
+        function playAudio(audioUrl) {
+            const audio = new Audio(audioUrl);
+            const spinner = document.getElementById('quiz-spinner');
+            spinner.classList.remove('hidden');
+            isAudioPlaying = true;
+        
+            audio.play();
+            audio.onended = () => {
+                spinner.classList.add('hidden');
+                isAudioPlaying = false;
+                enableOptions();
+            };
+        }
+        
+        function enableOptions() {
+            const buttons = document.querySelectorAll('#quiz-options button');
+            buttons.forEach(btn => btn.disabled = false);
+        }
+        
+        function checkWordAnswerQuiz(selected, correct) {
+            const feedback = document.getElementById('quiz-feedback');
+            const card = document.getElementById('quiz-card');
+        
+            wordQuizAttempts++;
+        
+            if (selected === correct) {
+                feedback.innerHTML = `<span class="text-green-600 font-bold">✅ Rätt!</span>`;
+                card.classList.add('bg-green-100');
+                wordQuizScore++;
+            } else {
+                feedback.innerHTML = `<span class="text-red-600 font-bold">❌ Fel!</span> Rätt svar: <strong>${correct}</strong>`;
+                card.classList.add('bg-red-100');
+            }
+        
+            setTimeout(() => {
+                card.classList.remove('bg-green-100', 'bg-red-100');
+                moveToNextWordQuiz();
+            }, 2000);
+        }
+        
+        function moveToNextWordQuiz() {
+            if (currentWordIndex < wordQuizDeck.length - 1) {
+                currentWordIndex++;
+                showWordQuiz(currentWordIndex);
+            } else {
+                showWordQuizResult();
+            }
+        }
+        
+        function showWordQuizResult() {
+            document.getElementById('wordquiz-container').innerHTML = `
+                <div class="text-2xl font-bold text-center text-green-700">
+                    Övning klar!<br/>
+                    Poäng: ${wordQuizScore} av ${wordQuizAttempts} (${Math.round((wordQuizScore / wordQuizAttempts) * 100)}%)
+                </div>
+                <button onclick="closeWordQuiz()" class="mt-6 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded">
+                    Stäng
+                </button>
+            `;
+        }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+        
+        function generateOptions(correctAnswer) {
+            const words = JSON.parse(document.getElementById('word-data').textContent || '[]');
+            let pool = words.map(w => w.text).concat(words.map(w => w.translation));
+            pool = pool.filter(w => w !== correctAnswer);
+            shuffleArray(pool);
+        
+            const options = pool.slice(0, 3);
+            options.push(correctAnswer);
+            shuffleArray(options);
+            return options;
+        }
+    </script>
+    
+
+    <script>
+        let chooseDeck = [];
+        let chooseIndex = 0;
+        let chooseScore = 0;
+        let chooseAttempts = 0;
+        let chooseTimeout;
+        let chooseAudio;
+        
+        function openChooseExercise() {
+          document.getElementById('choose-modal').classList.remove('hidden');
+          prepareChooseDeck();
+        }
+        
+        function closeChooseExercise() {
+          document.getElementById('choose-modal').classList.add('hidden');
+          clearTimeout(chooseTimeout);
+          if (chooseAudio) {
+            chooseAudio.pause();
+            chooseAudio = null;
+          }
+        }
+        
+        function prepareChooseDeck() {
+          const words = JSON.parse(document.getElementById('word-data').textContent || '[]');
+          chooseDeck = [];
+        
+          words.forEach(word => {
+            // Från språket vi lär oss ➔ basspråk
+            chooseDeck.push({
+              word: word.text,
+              answer: word.translation,
+              example: word.example_sentence ? word.example_sentence.text : "",
+              audio: word.audio,
+            });
+            // Från basspråk ➔ språket vi lär oss
+            chooseDeck.push({
+              word: word.translation,
+              answer: word.text,
+              example: word.example_sentence ? word.example_sentence.translation : "",
+              audio: word.audio,
+            });
+          });
+        
+          shuffleArray(chooseDeck);
+          chooseIndex = 0;
+          chooseScore = 0;
+          chooseAttempts = 0;
+          showChooseCard();
+        }
+        
+        function showChooseCard() {
+          clearTimeout(chooseTimeout);
+        
+          if (chooseIndex >= chooseDeck.length) {
+            document.getElementById('choose-container').innerHTML = `
+              <div class="text-2xl font-bold text-center text-green-700">
+                Övning klar!<br/>
+                Resultat: ${chooseScore} rätt av ${chooseAttempts} försök (${Math.round((chooseScore/chooseAttempts)*100)}%)
+              </div>
+              <button onclick="closeChooseExercise()" class="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Stäng
+              </button>
+            `;
+            return;
+          }
+        
+          const current = chooseDeck[chooseIndex];
+          const allAnswers = chooseDeck.map(c => c.answer);
+          const randomOptions = shuffleArray([current.answer, ...allAnswers.filter(a => a !== current.answer).slice(0, 3)]).slice(0,4);
+        
+          document.getElementById('choose-container').innerHTML = `
+            <div id="choose-card" class="p-6 bg-white dark:bg-gray-700 rounded-lg shadow space-y-6 transition-all duration-500">
+              <div class="text-2xl font-bold text-gray-800 dark:text-white">${current.word}</div>
+              <div class="text-gray-500 italic">${current.example || ''}</div>
+              <div class="grid grid-cols-2 gap-4 mt-6">
+                ${randomOptions.map(option => `
+                  <button onclick="checkChooseAnswer('${option}')" class="choose-option px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded">${option}</button>
+                `).join('')}
+              </div>
+              <div class="text-gray-400 text-sm pt-4">
+                Poäng: ${chooseScore}/${chooseAttempts}
+              </div>
+            </div>
+          `;
+        
+          // Start timer
+          startChooseTimer();
+        
+          // Spela ljud om finns
+          if (current.audio) {
+            chooseAudio = new Audio(current.audio);
+            chooseAudio.play();
+          }
+        
+          // Enter = klicka rätt svar direkt
+          document.addEventListener('keydown', chooseEnterListener);
+        }
+        
+        function chooseEnterListener(e) {
+          if (e.key === 'Enter') {
+            const buttons = document.querySelectorAll('.choose-option');
+            if (buttons.length) {
+              buttons.forEach(btn => {
+                if (btn.textContent.trim() === chooseDeck[chooseIndex].answer.trim()) {
+                  btn.click();
+                }
+              });
+            }
+          }
+        }
+        
+        function startChooseTimer() {
+          const bar = document.getElementById('choose-timer-bar');
+          bar.style.width = '100%';
+          let width = 100;
+          chooseTimeout = setInterval(() => {
+            width -= 2;
+            bar.style.width = `${width}%`;
+            if (width <= 0) {
+              clearInterval(chooseTimeout);
+              failChoose();
+            }
+          }, 100);
+        }
+        
+        function checkChooseAnswer(selected) {
+          clearInterval(chooseTimeout);
+          document.removeEventListener('keydown', chooseEnterListener);
+        
+          const correct = chooseDeck[chooseIndex].answer;
+          const card = document.getElementById('choose-card');
+        
+          chooseAttempts++;
+        
+          if (selected.trim().toLowerCase() === correct.trim().toLowerCase()) {
+            chooseScore++;
+            card.classList.add('bg-green-100', 'animate-pulse');
+          } else {
+            card.classList.add('bg-red-100', 'animate-pulse');
+            highlightCorrectChoose(correct);
+          }
+        
+          setTimeout(() => {
+            chooseIndex++;
+            showChooseCard();
+          }, 2000);
+        }
+        
+        function failChoose() {
+          checkChooseAnswer(''); // tomt val → fail
+        }
+        
+        function highlightCorrectChoose(correct) {
+          const options = document.querySelectorAll('.choose-option');
+          options.forEach(btn => {
+            if (btn.textContent.trim() === correct.trim()) {
+              btn.classList.add('bg-green-400');
+            }
+          });
+        }
+        
+        // Helper: blanda array
+        function shuffleArray(array) {
+          let currentIndex = array.length, randomIndex;
+          while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+          }
+          return array;
+        }
+        </script>
+        
+    
+
+
+    <script>
+        function uploadWordAudio(wordId, audioFile) {
+            const formData = new FormData();
+            formData.append('audio', audioFile);
+
+            fetch(`/api/words/${wordId}/upload_audio/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),  // OBS: säkerställ att getCookie finns också
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.audio_url) {
+                    document.getElementById('audio-upload-success').classList.remove('hidden');
+                    setTimeout(() => {
+                        document.getElementById('audio-upload-success').classList.add('hidden');
+                    }, 3000); // flash i 3 sekunder
+                }
+            })
+            .catch(error => {
+                console.error('Fel vid uppladdning:', error);
+            });
+        }
+    </script>
+
+{% endblock %}

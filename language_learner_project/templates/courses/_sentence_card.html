@@ -1,0 +1,87 @@
+{% load i18n %}
+
+<div class="bg-white dark:bg-gray-800 p-4 rounded shadow space-y-4" id="sentence-card-{{ sentence.id }}">
+
+  <!-- Ursprungstext (inte redigerbar) -->
+  <div>
+    <label class="block mb-1 text-sm font-semibold dark:text-white">{% trans "Text på språket" %}</label>
+    <div class="p-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 select-text">
+      {{ sentence.text }}
+    </div>
+  </div>
+
+  <!-- Översättning (redigerbar) -->
+  <div>
+    <label class="block mb-1 text-sm font-semibold dark:text-white">{% trans "Översättning" %}</label>
+    <textarea
+      class="w-full p-2 border rounded dark:bg-gray-700 dark:text-white resize-none"
+      data-id="{{ sentence.id }}"
+      data-field="translation"
+      onblur="saveTranslation(this)"
+      onkeydown="handleKeydown(event, this)"
+    >{{ sentence.translation }}</textarea>
+    <div id="save-status-{{ sentence.id }}" class="text-xs text-gray-400 mt-1 hidden">{% trans "Sparar..." %}</div>
+  </div>
+
+  <!-- Ljudspelare och uppladdning -->
+  <div>
+    {% if sentence.audio %}
+    <audio controls src="{{ sentence.audio.url }}" class="mt-2 mb-2"></audio>
+    <button 
+      onclick="deleteSentenceAudio({{ sentence.id }})"
+      class="text-red-600 text-sm underline ml-2"
+    >
+      🗑 Ta bort ljud
+    </button>
+  {% else %}
+
+    <!-- Form för uppladdning -->
+    <form
+      hx-post="{% url 'sentence_upload_audio' sentence.id %}"
+      hx-target="#sentence-card-{{ sentence.id }}"
+      hx-encoding="multipart/form-data"
+      enctype="multipart/form-data"
+      class="flex items-center space-x-2 mt-4"
+    >
+      <input 
+        type="file"
+        name="audio"
+        accept="audio/*"
+        class="block w-full text-sm text-gray-600 dark:text-gray-300"
+      >
+      <button type="submit" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm">
+        {% trans "Ladda upp ljud" %}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+</div>
+
+
+
+<script>
+    function startEditingTextarea(el) {
+      const originalText = el.innerText.trim();
+      const id = el.dataset.id;
+      const field = el.dataset.field;
+    
+      // Byt till en riktig textarea
+      const textarea = document.createElement('textarea');
+      textarea.value = originalText;
+      textarea.className = 'w-full min-h-[80px] p-2 border rounded dark:bg-gray-700 dark:text-white';
+      
+      textarea.onblur = () => saveEdit(id, field, textarea.value, el);
+      textarea.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {  // Enter sparar (Shift+Enter gör radbrytning)
+          e.preventDefault();
+          textarea.blur();
+        }
+      };
+    
+      el.innerHTML = '';
+      el.appendChild(textarea);
+      textarea.focus();
+    }
+    </script>
+    

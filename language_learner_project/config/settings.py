@@ -9,9 +9,11 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-import environ
+
 import os
 from pathlib import Path
+
+import environ
 from django.utils.translation import gettext_lazy as _
 
 LANGUAGE_CODE = "sv"
@@ -23,7 +25,6 @@ LANGUAGES = [
 ]
 
 
-
 USE_I18N = True
 USE_L10N = True
 
@@ -32,11 +33,11 @@ USE_L10N = True
 BASE_DIR = Path(__file__).resolve().parent.parent
 LOCALE_PATHS = [BASE_DIR / "locale"]
 STATICFILES_DIRS = [BASE_DIR / "static"]
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Initiera miljöhantering
-env = environ.Env(
-    DEBUG=(bool, False)
-)
+env = environ.Env(DEBUG=(bool, False))
 
 # Läs in .env-filen
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
@@ -59,7 +60,6 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 
-
 ALLOWED_HOSTS = []
 
 
@@ -72,16 +72,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # own apps
     'core',
     "accounts",
-
+    # admin
+    'adminsortable2',
+    # translation
+    "rosetta",
+    'widget_tweaks',
 ]
-
-
-
-
 
 
 MIDDLEWARE = [
@@ -94,7 +93,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
 
 
 ROOT_URLCONF = "config.urls"
@@ -145,7 +143,6 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-
 
 
 # Internationalization

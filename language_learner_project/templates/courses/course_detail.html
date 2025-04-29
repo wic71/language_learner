@@ -1,16 +1,70 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-
-{% block title %}{{ course.name }}{% endblock %}
-
 {% block content %}
-<div class="max-w-3xl mx-auto p-6 bg-white dark:bg-gray-800 a11y:card shadow rounded">
-  <h1 class="text-2xl font-bold dark:text-white">{{ course.name }}</h1>
-  <p class="text-gray-500 dark:text-gray-300">
-    {% trans "Lär dig" %}: {{ course.get_language_display }} ·
-    {% trans "Basspråk" %}: {{ course.get_base_language_display }}
-  </p>
-  <p>{% trans "Denna sida är inte klar ännu – men kursen finns!" %}</p>
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <h1 class="text-3xl font-bold mb-4 dark:text-white">{{ course.name }}</h1>
+    <p class="text-gray-700 dark:text-gray-300 mb-8">{{ course.description }}</p>
+
+    <div class="w-full bg-gray-200 rounded-full h-4 my-4">
+        <div class="bg-blue-600 h-4 rounded-full" style="width: {{ progress|floatformat:0 }}%"></div>
+      </div>
+      <p class="text-center text-sm text-gray-600">
+        {{ progress|floatformat:0 }}% klar
+      </p>
+
+    <h2 class="text-2xl font-semibold mb-4 dark:text-white">{% trans "Moduler" %}</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {% for item in module_data %}
+            {% with module=item.module usermodule=item.usermodule %}
+            <div class="rounded-lg p-6 shadow 
+                        {% if usermodule and usermodule.completed %}
+                            bg-green-100 dark:bg-green-800
+                        {% elif usermodule %}
+                            bg-white dark:bg-gray-800
+                        {% else %}
+                            bg-gray-200 dark:bg-gray-700 hover:ring-2 hover:ring-yellow-500
+                        {% endif %}">
+                
+                <h3 class="text-xl font-bold mb-2 dark:text-white">
+                    {% if usermodule %}
+                        <a href="{% url 'module_detail' module.pk %}" class="hover:underline">
+                            {{ module.title }} a
+                        </a>
+                    {% else %}
+                        {{ module.title }} 
+                    {% endif %}
+                </h3>
+
+                <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">{{ module.description|truncatewords:15 }}</p>
+                {% if usermodule %}
+                    {% if usermodule.completed_at %}
+                        <!-- Modul är klar -->
+                        <span class="inline-block px-4 py-2 bg-green-600 text-white rounded">
+                            ✅ Klar
+                        </span>
+                    {% else %}
+                        <!-- Modul påbörjad men ej klar -->
+                        <a href="{% url 'module_detail' module.pk %}" 
+                        class="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                            🚀 Fortsätt
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <!-- Modul inte startad ännu -->
+                    <form action="{% url 'start_module' module.pk %}" method="post" class="inline-block">
+                        {% csrf_token %}
+                        <button type="submit" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded">
+                            🔥 Starta
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+            {% endwith %}
+        {% empty %}
+            <p class="text-gray-500">{% trans "Inga moduler ännu." %}</p>
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}
