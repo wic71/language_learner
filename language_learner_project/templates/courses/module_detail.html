@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% load i18n %}
 {% load static %}
@@ -15,10 +16,10 @@
     </a>
 
     <h1 class="text-3xl font-bold dark:text-white">{{ module.title }}</h1>
-    <p class="text-gray-600 dark:text-gray-300">{{ module.description }}</p>
+    <p class="text-gray-600 dark:text-gray-300">{{ module.description|safe }}</p>
 
     <div class="py-4">
-        {{ module.text|linebreaks }}
+        {{ module.text|safe }}
     </div>
 
     <div class="flex space-x-4 pt-4">

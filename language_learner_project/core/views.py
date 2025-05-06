@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import re
 from datetime import datetime, timezone
 
@@ -224,6 +225,10 @@ def module_edit(request, pk):
             form.save()
             # Efter form.save()
             module = form.save(commit=False)
+
+            # rensa html taggar som ej är tillåtna
+            module.description = clean_user_html(form.cleaned_data['description'])
+            module.text = clean_user_html(form.cleaned_data['text'])
 
             # Sanera excluded_words
             if module.excluded_words:
@@ -662,7 +667,7 @@ def start_module(request, pk):
         module=module,
     )
     if created:
-        usermodule.started_at = timezone.now()
+        usermodule.started_at = django.utils.timezone.now
         usermodule.save()
 
     return redirect('module_detail', pk=module.pk)

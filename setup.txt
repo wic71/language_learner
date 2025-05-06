@@ -1,0 +1,161 @@
+
+# varje dag:
+cd language_learner_project
+source venv/bin/activate
+
+python manage.py makemigrations
+python manage.py migrate
+python manage.py runserver
+
+
+
+# språk hantering
+django-admin makemessages -l sv
+django-admin makemessages -l en
+django-admin makemessages -l lv
+django-admin compilemessages
+
+# städa kod
+black .
+isort .
+
+
+#git
+git status
+git add .
+# eller för enbart vissa, ex: git add core/views.py templates/courses/course_edit.html
+git commit -m "Add course edit + detail views, working profile listing"
+git push
+
+
+python manage.py runserver
+
+
+
+# ------------------------------------
+
+# Sätta upp ett helt nytt projekt med Django backend och HTMX + Tailwind frontend
+
+# Skapa mapp och virtual environment
+mkdir myproject
+cd myproject
+python3 -m venv venv
+
+# Activera 
+source venv/bin/activate
+
+# Installera Django och skapa projekt
+pip install django
+pip install --upgrade pip
+django-admin startproject config .
+
+# uppdatera requirements
+pip freeze > requirements.txt
+
+# skapa första app
+python manage.py startapp core
+
+# skapa mapp för templates, bilder och andra statiska filer
+mkdir templates static
+
+
+
+# Lägg till i config/settings.py:
+# # Lägg till i INSTALLED_APPS
+INSTALLED_APPS = [
+    ...
+    'core',
+]
+
+# # Templates directory
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"], # <---
+
+# # Statiska filer
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
+
+# uppdatera projektets urls.py
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path('', include('core.urls')),
+]
+
+
+# skapa appens urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.home, name='home'),
+    path('partial/time/', views.time_partial, name='time_partial'),
+]
+
+
+# skapa vyer med HTMX i core/views.py
+from django.shortcuts import render
+from datetime import datetime
+
+def home(request):
+    return render(request, "home.html")
+
+def time_partial(request):
+    return render(request, "partials/time.html", {"now": datetime.now()})
+
+
+# Skapa templates i templates/
+
+# template home.html
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>HTMX Test</title>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="p-8 bg-gray-100">
+    <h1 class="text-2xl font-bold mb-4">HTMX + Tailwind + Django</h1>
+
+    <button class="bg-blue-600 text-white px-4 py-2 rounded"
+            hx-get="{% url 'time_partial' %}"
+            hx-target="#result"
+            hx-swap="outerHTML">
+        Visa aktuell tid
+    </button>
+
+    <div id="result" class="mt-4"></div>
+</body>
+</html>
+
+
+# templates/partials/time.html
+<div id="result" class="text-green-700 font-mono">
+    Nuvarande tid: {{ now|date:"Y-m-d H:i:s" }}
+</div>
+
+
+# testa projektets
+python manage.py migrate
+python manage.py runserver
+
+
+
+
+
+Här är några förslag på nästa steg:
+
+🛡️ Lägg till CSRF-skydd i HTMX-requests
+
+🎨 Byt Tailwind från CDN till CLI (för att kunna bygga eget tema, minifiera mm)
+
+🧩 Skapa fler komponenter med HTMX (t.ex. navbar, sök, liveform)
+
+🗂️ Organisera templates bättre (ex. components/, partials/, base.html)
+
+🐳 Förbered för Docker och Codespaces i nästa steg

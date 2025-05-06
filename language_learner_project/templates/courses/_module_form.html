@@ -164,93 +164,88 @@
     section.classList.toggle('hidden');
   }
   
-  function regenerateSentences(moduleId) {
-    fetch(/sv/modules/${moduleId}/generate_sentences/, {
-      method: 'POST',
-      headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-    }).then(response => location.reload());
-  }
+function regenerateSentences(moduleId) {
+  fetch(`/sv/modules/${moduleId}/generate_sentences/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  }).then(response => location.reload());
+}
 
-  function saveWordTranslation(wordId, value) {
-    const input = event.target;
-    input.classList.add('opacity-50');
-    
-    fetch(/sv/words/${wordId}/edit_translation/, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': '{{ csrf_token }}',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ translation: value })
-    }).then(response => {
-      if (response.ok) {
-        input.classList.remove('opacity-50');
-        input.classList.add('bg-green-100', 'dark:bg-green-900');
-        setTimeout(() => {
-          input.classList.remove('bg-green-100', 'dark:bg-green-900');
-        }, 1000);
+function saveWordTranslation(wordId, value) {
+  const input = event.target;
+  input.classList.add('opacity-50');
+
+  fetch(`/sv/words/${wordId}/edit_translation/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ translation: value })
+  }).then(response => {
+    if (response.ok) {
+      input.classList.remove('opacity-50');
+      input.classList.add('bg-green-100', 'dark:bg-green-900');
+      setTimeout(() => {
+        input.classList.remove('bg-green-100', 'dark:bg-green-900');
+      }, 1000);
+    }
+  });
+}
+
+function uploadWordImage(wordId, file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  fetch(`/sv/words/${wordId}/upload_image/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    body: formData
+  }).then(() => location.reload());
+}
+
+function uploadWordAudio(wordId, file) {
+  const formData = new FormData();
+  formData.append('audio', file);
+
+  fetch(`/sv/words/${wordId}/upload_audio/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === "success") {
+      const cell = document.querySelector(`#word-${wordId} td:nth-child(4)`);
+      if (cell) {
+        cell.innerHTML = `
+          <audio controls src="${data.audio_url}" class="mt-2 mb-2"></audio>
+          <button onclick="deleteWordAudio(${wordId})" class="text-red-600 text-sm underline ml-2">
+            🗑 Ta bort ljud
+          </button>
+        `;
       }
-    });
-  }
+    } else {
+      alert('Misslyckades att ladda upp ljud.');
+    }
+  })
+  .catch(error => {
+    console.error('❌ Upload error:', error);
+    alert('Något gick fel vid uppladdning.');
+  });
+}
 
-  function uploadWordImage(wordId, file) {
-    const formData = new FormData();
-    formData.append('image', file);
-    fetch(/sv/words/${wordId}/upload_image/, {
-      method: 'POST',
-      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
-      body: formData
-    }).then(() => location.reload());
-  }
-
-  function uploadWordAudio(wordId, file) {
-    const formData = new FormData();
-    formData.append('audio', file);
-
-    fetch(/sv/words/${wordId}/upload_audio/, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-        },
-        body: formData
-    })
-    .then(response => response.json())  // 🛠 TOLKA SOM JSON!
-    .then(data => {
-        if (data.status === "success") {
-            // ✅ Ljudet är uppladdat, nu kan vi visa det snyggt!
-
-            const cell = document.querySelector(#word-${wordId} td:nth-child(4)); // 4:e kolumnen = ljud
-            if (cell) {
-                cell.innerHTML = 
-                    <audio controls src="${data.audio_url}" class="mt-2 mb-2"></audio>
-                    <button onclick="deleteWordAudio(${wordId})" class="text-red-600 text-sm underline ml-2">
-                        🗑 Ta bort ljud
-                    </button>
-                ;
-            }
-        } else {
-            alert('Misslyckades att ladda upp ljud.');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Upload error:', error);
-        alert('Något gick fel vid uppladdning.');
-    });
-  }
-</script>
-
-
-<script>
 function uploadAudio(sentenceId, file) {
   const formData = new FormData();
   formData.append('audio', file);
 
-  const spinner = document.getElementById(spinner-${sentenceId});
+  const spinner = document.getElementById(`spinner-${sentenceId}`);
   if (spinner) {
-    spinner.classList.remove('hidden'); // Visa spinner
+    spinner.classList.remove('hidden');
   }
 
-  fetch(/sv/sentences/${sentenceId}/upload_audio/, {
+  fetch(`/sv/sentences/${sentenceId}/upload_audio/`, {
     method: 'POST',
     headers: {
       'X-CSRFToken': '{{ csrf_token }}'
@@ -258,13 +253,13 @@ function uploadAudio(sentenceId, file) {
     body: formData
   }).then(response => response.text())
     .then(html => {
-      const el = document.getElementById(sentence-${sentenceId});
+      const el = document.getElementById(`sentence-${sentenceId}`);
       el.outerHTML = html;
     })
     .catch(() => alert('Misslyckades att ladda upp ljud.'))
     .finally(() => {
       if (spinner) {
-        spinner.classList.add('hidden'); // Göm spinner igen
+        spinner.classList.add('hidden');
       }
     });
 }
@@ -274,126 +269,113 @@ function deleteAudio(sentenceId) {
     return;
   }
 
-  fetch(/sv/sentences/${sentenceId}/delete_audio/, {
+  fetch(`/sv/sentences/${sentenceId}/delete_audio/`, {
     method: 'POST',
     headers: {
       'X-CSRFToken': '{{ csrf_token }}'
     }
   }).then(response => {
     if (response.ok) {
-      reloadModal(); // 🔥 Efter borttagning också
+      reloadModal();
     } else {
       alert('Misslyckades att ta bort ljud.');
     }
   });
-
+}
 
 function reloadModal() {
   const currentModuleId = {{ form.instance.pk }};
-  fetch(/sv/modules/${currentModuleId}/edit/)
+  fetch(`/sv/modules/${currentModuleId}/edit/`)
     .then(response => response.text())
     .then(html => {
       document.getElementById('modal-body').innerHTML = html;
     });
 }
 
-  </script>
-  
-  <script>
-    function saveTranslation(textarea) {
-      const id = textarea.dataset.id;
-      const field = textarea.dataset.field;
-      const value = textarea.value.trim();
-      const status = document.getElementById(save-status-${id});
+function saveTranslation(textarea) {
+  const id = textarea.dataset.id;
+  const field = textarea.dataset.field;
+  const value = textarea.value.trim();
+  const status = document.getElementById(`save-status-${id}`);
 
-      // Visa "sparar..."
-      status.textContent = "Sparar...";
-      status.classList.remove("hidden");
+  status.textContent = "Sparar...";
+  status.classList.remove("hidden");
 
-      fetch(/sv/sentences/${id}/inline_edit/, {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": "{{ csrf_token }}",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ field, value })
-      })
-      .then(response => {
-        if (response.ok) {
-          status.textContent = "Sparat ✅";
-        } else {
-          status.textContent = "Fel vid sparande ❌";
-        }
-        setTimeout(() => status.classList.add("hidden"), 2000);
-      });
+  fetch(`/sv/sentences/${id}/inline_edit/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": "{{ csrf_token }}",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ field, value })
+  })
+  .then(response => {
+    if (response.ok) {
+      status.textContent = "Sparat ✅";
+    } else {
+      status.textContent = "Fel vid sparande ❌";
     }
+    setTimeout(() => status.classList.add("hidden"), 2000);
+  });
+}
 
-    function handleKeydown(event, textarea) {
-      if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        textarea.blur();  // Trigger save
+function deleteSentenceAudio(sentenceId) {
+  if (confirm('Är du säker på att du vill ta bort ljudet?')) {
+    fetch(`/sv/sentences/${sentenceId}/delete_audio/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}'
       }
-    }
-</script>
+    }).then(response => {
+      if (response.ok) {
+        response.text().then(html => {
+          const el = document.getElementById(`sentence-${sentenceId}`);
+          el.outerHTML = html;
+        });
+      } else {
+        alert('Misslyckades att ta bort ljud!');
+      }
+    });
+  }
+}
 
-<script>
-  function deleteSentenceAudio(sentenceId) {
-      if (confirm('Är du säker på att du vill ta bort ljudet?')) {
-          fetch(/sv/sentences/${sentenceId}/delete_audio/, {
-              method: 'POST',
-              headers: {
-                  'X-CSRFToken': '{{ csrf_token }}'
-              }
-          }).then(response => {
-              if (response.ok) {
-                  response.text().then(html => {
-                      const el = document.getElementById(sentence-${sentenceId});
-                      el.outerHTML = html;
-                  });
-              } else {
-                  alert('Misslyckades att ta bort ljud!');
-              }
-          });
-      }
+function deleteWordAudio(wordId) {
+  if (!confirm('Är du säker på att du vill ta bort ljudfilen?')) {
+    return;
   }
 
-  function deleteWordAudio(wordId) {
-      if (!confirm('Är du säker på att du vill ta bort ljudfilen?')) {
-          return;
+  fetch(`/sv/words/${wordId}/delete_audio/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === "success") {
+      const cell = document.querySelector(`#word-${wordId} td:nth-child(4)`);
+      if (cell) {
+        cell.innerHTML = `
+          <div class="flex flex-col items-center space-y-2">
+            <input type="file" onchange="uploadWordAudio(${wordId}, this.files[0])" class="block w-full text-sm text-gray-500
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            file:bg-blue-50 file:text-blue-700
+            hover:file:bg-blue-100
+            ">
+          </div>
+        `;
       }
-
-      fetch(/sv/words/${wordId}/delete_audio/, {
-          method: 'POST',
-          headers: {
-              'X-CSRFToken': getCookie('csrftoken'),
-          },
-      })
-      .then(response => response.json())
-      .then(data => {
-          if (data.status === "success") {
-              const cell = document.querySelector(#word-${wordId} td:nth-child(4));
-              if (cell) {
-                  cell.innerHTML = 
-                      <div class="flex flex-col items-center space-y-2">
-                          <input type="file" onchange="uploadWordAudio(${wordId}, this.files[0])" class="block w-full text-sm text-gray-500
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-full file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-blue-50 file:text-blue-700
-                          hover:file:bg-blue-100
-                          ">
-                      </div>
-                  ;
-              }
-          } else {
-              alert('Något gick fel vid borttagning.');
-          }
-      })
-      .catch(error => {
-          console.error('❌ Delete error:', error);
-          alert('Något gick fel vid borttagning.');
-      });
-  }
+    } else {
+      alert('Något gick fel vid borttagning.');
+    }
+  })
+  .catch(error => {
+    console.error('❌ Delete error:', error);
+    alert('Något gick fel vid borttagning.');
+  });
+}
 
 </script>
 

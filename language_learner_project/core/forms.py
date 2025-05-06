@@ -1,7 +1,11 @@
+import bleach
 from django import forms
 
 from .languages import LANGUAGE_CHOICES
 from .models import Course, Module, Sentence
+
+# Tillåtna HTML-taggar – andra tas bort för att undvika XSS
+ALLOWED_TAGS = ['p', 'br', 'ul', 'ol', 'li', 'b', 'i']
 
 
 class SentenceForm(forms.ModelForm):
@@ -30,6 +34,24 @@ class CourseForm(forms.ModelForm):
 
 
 class ModuleForm(forms.ModelForm):
+    """
+    Formulär för att skapa och redigera en modul. Rensar HTML i textfält enligt whitelist.
+    """
+
     class Meta:
         model = Module
-        fields = ["title", "description", "text", "excluded_words"]
+        fields = ['title', 'description', 'text', 'excluded_words']
+
+    def clean_description(self):
+        """
+        Rensar beskrivningen från otillåten HTML.
+        """
+        desc = self.cleaned_data.get('description', '')
+        return bleach.clean(desc, tags=ALLOWED_TAGS)
+
+    def clean_text(self):
+        """
+        Rensar textfältet från otillåten HTML.
+        """
+        text = self.cleaned_data.get('text', '')
+        return bleach.clean(text, tags=ALLOWED_TAGS)
