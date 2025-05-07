@@ -30,7 +30,7 @@
         <!-- Modulinfo (drag-handle) -->
         <div class="drag-handle cursor-move">
           <h2 class="text-lg font-semibold dark:text-blue-300">{{ module.title }}</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ module.description|truncatewords:15 }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ module.description|safe|truncatewords:20 }}</p>
         </div>
   
         <!-- Knappar -->

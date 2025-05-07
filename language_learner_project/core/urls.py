@@ -71,4 +71,9 @@ urlpatterns = [
     path('modules/<int:pk>/', module_detail, name='module_detail'),
     path('modules/<int:pk>/complete/', complete_module, name='complete_module'),
     path('modules/<int:pk>/start/', start_module, name='start_module'),
+
+
+    path('exercises/create/<int:module_id>/', views.create_exercise, name='create_exercise'),
+    path('exercises/edit/<int:pk>/', views.edit_exercise, name='edit_exercise'),
+    path('exercises/delete/<int:pk>/', views.delete_exercise, name='delete_exercise'),
 ]

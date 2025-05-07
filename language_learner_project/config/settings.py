@@ -74,7 +74,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # own apps
     'core',
-    "accounts",
+    'accounts',
+
     # admin
     'adminsortable2',
     # translation

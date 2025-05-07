@@ -45,6 +45,8 @@
   </div>
 </form>
 
+
+
 <hr class="my-8">
 
 <!-- 🧩 Meningar - Collapsable -->
@@ -139,6 +141,31 @@
       {% else %}
         <p class="text-gray-400">{% trans "Inga ord ännu." %}</p>
       {% endif %}
+    </div>
+  </div>
+  <!-- 🧩 Övningar - Collapsable -->
+  <div>
+    <button type="button" onclick="toggleSection('exercises-section')" class="w-full text-left py-2 font-bold bg-gray-200 dark:bg-gray-700 rounded mb-2">
+      📝 Övningar
+    </button>
+    <div id="exercises-section" class="space-y-4 max-h-[500px] overflow-y-auto pr-2 hidden">
+      {% for exercise in form.instance.exercises.all %}
+        <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded shadow space-y-2">
+          <h4 class="text-lg font-bold text-gray-900 dark:text-white">{{ exercise.name }}</h4>
+          <p class="text-gray-600 dark:text-gray-300">{{ exercise.description|linebreaksbr }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400"><b>Att tänka på:</b> {{ exercise.considerations|linebreaksbr }}</p>
+          <div class="flex space-x-2 justify-end">
+            <button class="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded" onclick="editExercise({{ exercise.id }})">✏️ Redigera</button>
+            <button class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded" onclick="deleteExercise({{ exercise.id }})">🗑 Ta bort</button>
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-gray-400">{% trans "Inga övningar ännu." %}</p>
+      {% endfor %}
+      
+      <div class="text-right">
+        <button class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded" onclick="createExercise({{ form.instance.pk }})">➕ Ny övning</button>
+      </div>
     </div>
   </div>
 {% endif %}
@@ -400,4 +427,38 @@ function deleteWordAudio(wordId) {
       updatePreview();  // Kör direkt när sidan laddar
     }
   });
+
+  
+</script>
+
+<script>
+  function createExercise(moduleId) {
+  fetch(`/sv/exercises/create/${moduleId}/`)
+    .then(response => response.text())
+    .then(html => {
+      document.getElementById('modal-body').innerHTML = html;
+    });
+}
+
+function editExercise(exerciseId) {
+  fetch(`/sv/exercises/edit/${exerciseId}/`)
+    .then(response => response.text())
+    .then(html => {
+      document.getElementById('modal-body').innerHTML = html;
+    });
+}
+
+function deleteExercise(exerciseId) {
+  if (confirm('Är du säker på att du vill ta bort denna övning?')) {
+    fetch(`/sv/exercises/delete/${exerciseId}/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+    }).then(() => {
+      location.reload();
+    });
+  }
+}
+
 </script>

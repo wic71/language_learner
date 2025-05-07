@@ -18,9 +18,13 @@ from django.utils.timezone import now
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
 
-from .forms import CourseForm, ModuleForm, SentenceForm
+from .forms import CourseForm, ModuleForm, SentenceForm,ExerciseForm
 from .models import Course, Module, Sentence, UserModule, Word
 from .utils import split_into_sentences
+
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Module, Exercise
+from .forms import ExerciseForm
 
 logger = logging.getLogger(__name__)
 
@@ -704,3 +708,37 @@ def module_complete(request, pk):
             UserModule.objects.get_or_create(user=request.user, module=next_module)
 
     return redirect('course_detail', pk=module.course.pk)
+
+
+
+
+def create_exercise(request, module_id):
+    module = get_object_or_404(Module, pk=module_id)
+    if request.method == 'POST':
+        form = ExerciseForm(request.POST)
+        if form.is_valid():
+            exercise = form.save(commit=False)
+            exercise.module = module
+            exercise.save()
+            return redirect('module_edit', pk=module.pk)
+        
+    else:
+        form = ExerciseForm()
+    return render(request, 'courses/exercise_form.html', {'form': form, 'module': module})
+
+def edit_exercise(request, pk):
+    exercise = get_object_or_404(Exercise, pk=pk)
+    if request.method == 'POST':
+        form = ExerciseForm(request.POST, instance=exercise)
+        if form.is_valid():
+            form.save()
+            return redirect('module_edit', pk=exercise.module.pk)
+    else:
+        form = ExerciseForm(instance=exercise)
+    return render(request, 'courses/exercise_form.html', {'form': form, 'module': exercise.module})
+
+def delete_exercise(request, pk):
+    exercise = get_object_or_404(Exercise, pk=pk)
+    module_pk = exercise.module.pk
+    exercise.delete()
+    return redirect('module_edit', pk=module_pk)

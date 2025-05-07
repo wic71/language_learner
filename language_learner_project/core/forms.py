@@ -2,7 +2,7 @@ import bleach
 from django import forms
 
 from .languages import LANGUAGE_CHOICES
-from .models import Course, Module, Sentence
+from .models import Course, Module, Sentence, Exercise
 
 # Tillåtna HTML-taggar – andra tas bort för att undvika XSS
 ALLOWED_TAGS = ['p', 'br', 'ul', 'ol', 'li', 'b', 'i']
@@ -55,3 +55,14 @@ class ModuleForm(forms.ModelForm):
         """
         text = self.cleaned_data.get('text', '')
         return bleach.clean(text, tags=ALLOWED_TAGS)
+
+
+
+class ExerciseForm(forms.ModelForm):
+    class Meta:
+        model = Exercise
+        fields = ['name', 'description', 'considerations']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'considerations': forms.Textarea(attrs={'rows': 3}),
+        }

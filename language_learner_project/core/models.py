@@ -147,3 +147,37 @@ class UserModule(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.module.title} ({'Upplåst' if self.unlocked else 'Låst'})"
+
+
+
+class Exercise(models.Model):
+    """En övning kopplad till en modul som eleven kan arbeta med."""
+    module = models.ForeignKey("core.Module", on_delete=models.CASCADE, related_name="exercises")
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    considerations = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class StudentExerciseResponse(models.Model):
+    """Ett svar som en elev skickat in till en viss övning."""
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name="responses")
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="exercise_responses")
+    
+    answer_text = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    # För framtida utvärdering
+    reviewed = models.BooleanField(default=False)
+    score = models.PositiveSmallIntegerField(null=True, blank=True)
+    feedback = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ("exercise", "student")  # En övning per elev
+
+    def __str__(self):
+        return f"{self.student} – {self.exercise}"

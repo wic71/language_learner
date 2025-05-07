@@ -13,7 +13,7 @@ from django.contrib.auth.models import User as AuthUser
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from .models import Course, Module, Sentence, UserModule, Word
+from .models import Course, Module, Sentence, UserModule, Word,Exercise
 
 User = get_user_model()
 
@@ -194,3 +194,11 @@ class LanguageLearnerAdminSite(AdminSite):
         context['latest_students'] = User.objects.order_by('-date_joined')[:5]
 
         return context
+
+
+@admin.register(Exercise)
+class ExerciseAdmin(admin.ModelAdmin):
+    list_display = ('name', 'module', 'created_at')  # Visa i listvy
+    list_filter = ('module', 'created_at')            # Filtrera på modul och datum
+    search_fields = ('name', 'description', 'considerations')  # Sökbart innehåll
+    ordering = ('-created_at',)
