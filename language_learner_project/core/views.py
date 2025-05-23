@@ -712,19 +712,27 @@ def module_complete(request, pk):
 
 
 
+from .forms import ModuleForm
+
 def create_exercise(request, module_id):
     module = get_object_or_404(Module, pk=module_id)
+
     if request.method == 'POST':
         form = ExerciseForm(request.POST)
         if form.is_valid():
             exercise = form.save(commit=False)
             exercise.module = module
             exercise.save()
-            return redirect('module_edit', pk=module.pk)
-        
+
+            # ✅ Returnera bara övningslistan
+            return render(request, 'courses/_exercise_list.html', {'module': module})
+
     else:
         form = ExerciseForm()
+
     return render(request, 'courses/exercise_form.html', {'form': form, 'module': module})
+
+
 
 def edit_exercise(request, pk):
     exercise = get_object_or_404(Exercise, pk=pk)
